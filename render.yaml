@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: scrum-poker
+    runtime: node
+    plan: starter
+    region: frankfurt
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: "production"
+      - key: NODE_VERSION
+        value: "22"
+      - key: DB_PATH
+        value: "/data/scrum-poker.db"

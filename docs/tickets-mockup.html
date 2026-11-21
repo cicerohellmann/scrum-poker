@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tickets mockup</title>
+<style>
+  :root{color-scheme:light;--bg:#f5f6f1;--bg-ink:#e6e8df;--panel:#fff;--panel-soft:#f9faf6;--ink:#161b1f;--muted:#657078;--line:#d8ddd4;--line-strong:#b8c0b5;--teal:#087f8c;--teal-dark:#075d66;--coral:#d95736;--amber:#f2a65a;--green:#168a5d;--shadow:0 14px 34px rgba(22,27,31,.13)}
+  :root[data-theme="dark"]{color-scheme:dark;--bg:#0e1417;--bg-ink:#080b0d;--panel:#161d21;--panel-soft:#1d262b;--ink:#eaf0ef;--muted:#94a2a9;--line:#283238;--line-strong:#3a474e;--teal:#18a9b9;--teal-dark:#0f8794;--coral:#f06a48;--green:#2fbb80;--shadow:0 14px 34px rgba(0,0,0,.5)}
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.45 -apple-system,system-ui,sans-serif;display:flex;flex-direction:column}
+  button{font:inherit;cursor:pointer;color:inherit}
+  .topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+  .room{font-weight:700}
+  .role{font-size:12px;border:1px solid var(--teal);color:var(--teal);border-radius:999px;padding:1px 9px}
+  .spacer{flex:1}
+  .btn{border:1px solid var(--line-strong);background:var(--panel);border-radius:8px;padding:7px 12px;font-weight:600}
+  .btn:hover{border-color:var(--teal)}
+  .btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+  .btn.primary:hover{background:var(--teal-dark)}
+  .btn.on{background:var(--ink);color:var(--panel);border-color:var(--ink)}
+  .btn.small{padding:4px 9px;font-size:13px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .layout{flex:1;min-height:0;display:grid;grid-template-columns:310px minmax(0,1fr) 0;transition:grid-template-columns .25s}
+  .layout.history-open{grid-template-columns:310px minmax(0,1fr) 330px}
+  .side{background:var(--panel);display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
+  .side.left{border-right:1px solid var(--line)}
+  .side.right{border-left:1px solid var(--line)}
+  .side-head{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+  .side-head h2{margin:0;font-size:15px}
+  .count{font-size:12px;color:var(--muted)}
+  .side-body{flex:1;overflow-y:auto;padding:16px 14px 24px}
+  .hint{color:var(--muted);font-size:13px;margin:0 0 12px}
+
+  /* stacked ticket cards */
+  .ticket{position:relative;background:var(--panel-soft);border:1px solid var(--line-strong);border-radius:12px;padding:11px 12px 20px;margin-bottom:-10px;box-shadow:0 -1px 0 rgba(0,0,0,.03),0 6px 14px rgba(22,27,31,.08);cursor:pointer;transition:transform .15s,box-shadow .15s}
+  .ticket:hover{transform:translateY(-3px)}
+  .ticket:last-child{margin-bottom:0;padding-bottom:12px}
+  .ticket .t-title{font-weight:650;overflow-wrap:anywhere}
+  .ticket .t-meta{font-size:12px;color:var(--muted);margin-top:2px}
+  .ticket a{color:var(--teal)}
+  .ticket.active{background:var(--panel);border:2px solid var(--teal);z-index:2;margin:6px -4px 4px;padding-bottom:12px;box-shadow:var(--shadow);cursor:default}
+  .ticket.active:hover{transform:none}
+  .now{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--teal);margin-bottom:3px}
+  .t-row{display:flex;gap:10px;align-items:flex-start}
+  .t-main{flex:1;min-width:0}
+  .confirm{display:flex;flex-direction:column;gap:5px;align-items:stretch;flex:none}
+  .confirm select{font:inherit;font-weight:700;padding:4px 6px;border-radius:8px;border:1px solid var(--line-strong);background:var(--panel);color:var(--ink)}
+  .t-x{position:absolute;top:6px;right:8px;border:0;background:none;color:var(--muted);font-size:15px;padding:2px 4px}
+  .ticket.active .t-x{display:none}
+
+  /* table */
+  .stage{display:flex;flex-direction:column;min-width:0;min-height:0;padding:14px 18px}
+  .current{text-align:center;min-height:46px}
+  .current .lbl{font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+  .current .ttl{font-size:18px;font-weight:700}
+  .table-wrap{flex:1;min-height:250px;position:relative}
+  .felt{position:absolute;inset:16% 16%;border-radius:999px;background:color-mix(in srgb,var(--teal) 14%,var(--panel));border:2px solid color-mix(in srgb,var(--teal) 45%,var(--line));display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center}
+  .stats{font-size:13px;color:var(--muted)}
+  .stats b{color:var(--ink);font-size:16px}
+  .seat{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px}
+  .pcard{width:36px;height:50px;border-radius:7px;border:1px dashed var(--line-strong);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;background:var(--panel)}
+  .pcard.voted{border:1px solid var(--teal);background:repeating-linear-gradient(45deg,var(--teal),var(--teal) 4px,var(--teal-dark) 4px,var(--teal-dark) 8px)}
+  .pcard.shown{border:1px solid var(--ink);background:var(--panel)}
+  .deck{display:flex;gap:7px;justify-content:center;flex-wrap:wrap;padding-top:8px}
+  .deck button{width:44px;height:60px;border-radius:9px;border:1px solid var(--line-strong);background:var(--panel);font-weight:800;font-size:17px}
+  .deck button.sel{background:var(--teal);color:#fff;border-color:var(--teal);transform:translateY(-6px)}
+
+  /* history */
+  .h-card{border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px;background:var(--panel-soft)}
+  .h-top{display:flex;gap:10px;align-items:center}
+  .h-val{width:46px;height:60px;flex:none;border-radius:9px;background:var(--green);color:#fff;font-weight:800;font-size:22px;display:flex;align-items:center;justify-content:center}
+  .h-title{font-weight:650;overflow-wrap:anywhere}
+  .h-meta{font-size:12px;color:var(--muted)}
+  .chips{display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
+  .chip{font-size:12px;border:1px solid var(--line-strong);border-radius:999px;padding:1px 8px;background:var(--panel)}
+  .chip b{margin-left:4px}
+
+  /* add window */
+  .veil{position:fixed;inset:0;background:rgba(10,14,16,.45);display:none;align-items:flex-start;justify-content:center;padding-top:9vh;z-index:10}
+  .veil.open{display:flex}
+  .modal{width:min(440px,92vw);background:var(--panel);border-radius:14px;box-shadow:var(--shadow);padding:18px}
+  .modal h3{margin:0 0 12px}
+  .modal label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin:10px 0 3px}
+  .modal input,.modal textarea{width:100%;font:inherit;padding:8px 10px;border-radius:8px;border:1px solid var(--line-strong);background:var(--panel-soft);color:var(--ink)}
+  .modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;align-items:center}
+  .added{font-size:13px;color:var(--green);margin-right:auto}
+  @media (max-width:860px){.layout,.layout.history-open{grid-template-columns:1fr;overflow:auto}.side{max-height:44vh}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="room">Tarantula#5242</span><span class="role">Scrum master</span>
+  <span class="spacer"></span>
+  <button class="btn small" id="themeBtn">Day / night</button>
+  <button class="btn" id="histBtn">History <span id="histCount"></span></button>
+</div>
+
+<div class="layout" id="layout">
+  <aside class="side left">
+    <div class="side-head">
+      <h2>Tickets</h2><span class="count" id="tCount"></span><span class="spacer"></span>
+      <button class="btn primary" id="addBtn">+ Tickets</button>
+    </div>
+    <div class="side-body">
+      <p class="hint" id="tHint"></p>
+      <div id="tickets"></div>
+    </div>
+  </aside>
+
+  <main class="stage">
+    <div class="current" id="current"></div>
+    <div class="table-wrap">
+      <div class="felt">
+        <div class="stats" id="stats"></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn primary" id="revealBtn">Reveal</button>
+          <button class="btn" id="clearBtn">Clear</button>
+        </div>
+      </div>
+      <div id="seats"></div>
+    </div>
+    <div class="deck" id="deck"></div>
+  </main>
+
+  <aside class="side right">
+    <div class="side-head"><h2>History</h2><span class="count" id="hCount"></span><span class="spacer"></span><button class="btn small" id="histClose">Close</button></div>
+    <div class="side-body" id="history"></div>
+  </aside>
+</div>
+
+<div class="veil" id="veil">
+  <div class="modal">
+    <h3>Add tickets</h3>
+    <label for="fTitle">Title</label><input id="fTitle" placeholder="PROJ-123 Login with Google">
+    <label for="fLink">Link (optional)</label><input id="fLink" placeholder="https://…">
+    <label for="fNote">Notes (optional)</label><textarea id="fNote" rows="2"></textarea>
+    <div class="row"><span class="added" id="added"></span><button class="btn" id="doneBtn">Done</button><button class="btn primary" id="addOne">Add ticket</button></div>
+  </div>
+</div>
+
+<script>
+const DECK=['0','1','2','3','5','8','13','21','?'];
+const PEOPLE=['You','Ana','Bruno','Chen','Dara','Emil'];
+const POS=[[50,94],[12,70],[14,24],[50,5],[86,24],[88,70]];
+let nextId=6, selected=null, revealed=false, votes={}, historyOpen=false;
+let tickets=[
+  {id:3,title:'PROJ-214 Password reset email',link:'https://example.com/PROJ-214',note:''},
+  {id:4,title:'PROJ-220 Export rooms to CSV',link:'',note:'Only the host can export'},
+  {id:5,title:'PROJ-231 Dark mode for invites',link:'',note:''}
+];
+let done=[
+  {id:2,title:'PROJ-207 Rate limit room creation',link:'',note:'',value:'5',votes:{You:'5',Ana:'5',Bruno:'3',Chen:'5',Dara:'8',Emil:'5'}},
+  {id:1,title:'PROJ-198 Invite link copy button',link:'',note:'',value:'2',votes:{You:'2',Ana:'2',Bruno:'2',Chen:'3',Dara:'2',Emil:'1'}}
+];
+const $=id=>document.getElementById(id);
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function calc(v){
+  const nums=Object.values(v).filter(x=>x!=='?').map(Number);
+  if(!nums.length) return null;
+  const cnt={}; Object.values(v).forEach(x=>cnt[x]=(cnt[x]||0)+1);
+  const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]||Number(b)-Number(a))[0];
+  return {avg:(nums.reduce((a,b)=>a+b,0)/nums.length).toFixed(1),min:Math.min(...nums),max:Math.max(...nums),top};
+}
+function render(){
+  $('layout').classList.toggle('history-open',historyOpen);
+  $('histBtn').classList.toggle('on',historyOpen);
+  $('histCount').textContent='('+done.length+')';
+  $('hCount').textContent=done.length+' estimated';
+  $('tCount').textContent=tickets.length+' to estimate';
+  $('tHint').textContent=!tickets.length?'No tickets left. Press "+ Tickets" to add some.':selected?'':'Click a ticket to estimate it.';
+  const st=revealed?calc(votes):null;
+  $('tickets').innerHTML=tickets.map(t=>{
+    const act=t.id===selected;
+    let right='';
+    if(act&&revealed&&st) right='<div class="confirm"><select id="finalVal" title="Value for this ticket">'+DECK.filter(d=>d!=='?').map(d=>'<option'+(d===st.top?' selected':'')+'>'+d+'</option>').join('')+'</select><button class="btn primary small" data-confirm="'+t.id+'">Confirm</button></div>';
+    return '<div class="ticket'+(act?' active':'')+'" data-id="'+t.id+'">'+
+      '<button class="t-x" data-del="'+t.id+'" title="Remove ticket">×</button>'+
+      '<div class="t-row"><div class="t-main">'+(act?'<span class="now">'+(revealed?'Estimated: confirm or clear':'Estimating now')+'</span><br>':'')+
+      '<span class="t-title">'+esc(t.title)+'</span>'+
+      (act&&t.note?'<div class="t-meta">'+esc(t.note)+'</div>':'')+
+      (act&&t.link?'<div class="t-meta"><a href="'+esc(t.link)+'" target="_blank" rel="noopener">Open ticket</a></div>':'')+
+      (t.redo?'<div class="t-meta">Back from history (was '+esc(t.redo)+')</div>':'')+
+      '</div>'+right+'</div></div>';
+  }).join('');
+  const cur=tickets.find(t=>t.id===selected);
+  $('current').innerHTML=cur?'<div class="lbl">Estimating</div><div class="ttl">'+esc(cur.title)+'</div>':'<div class="lbl">No ticket selected</div><div class="ttl" style="color:var(--muted)">Pick a ticket on the left</div>';
+  $('seats').innerHTML=PEOPLE.map((p,i)=>{
+    const v=votes[p];
+    return '<div class="seat" style="left:'+POS[i][0]+'%;top:'+POS[i][1]+'%"><div class="pcard'+(v?(revealed?' shown':' voted'):'')+'">'+(v&&revealed?v:'')+'</div>'+p+'</div>';
+  }).join('');
+  $('deck').innerHTML=DECK.map(d=>'<button data-card="'+d+'" class="'+(votes.You===d?'sel':'')+'"'+(revealed?' disabled':'')+'>'+d+'</button>').join('');
+  const n=Object.keys(votes).length;
+  $('stats').innerHTML=revealed&&st?'Most picked <b>'+st.top+'</b> · average <b>'+st.avg+'</b> · range <b>'+st.min+' to '+st.max+'</b>':n?n+' of '+PEOPLE.length+' voted':'Pick a card below to vote';
+  $('revealBtn').disabled=revealed||!n;
+  $('clearBtn').disabled=!n;
+  $('history').innerHTML=done.length?done.map(h=>{
+    const s=calc(h.votes);
+    return '<div class="h-card"><div class="h-top"><div class="h-val">'+h.value+'</div><div><div class="h-title">'+esc(h.title)+'</div>'+
+      '<div class="h-meta">average '+s.avg+' · range '+s.min+' to '+s.max+' · most picked '+s.top+'</div></div></div>'+
+      '<div class="chips">'+Object.entries(h.votes).map(([p,v])=>'<span class="chip">'+p+'<b>'+v+'</b></span>').join('')+'</div>'+
+      '<button class="btn small" data-redo="'+h.id+'">Re-estimate</button></div>';
+  }).join(''):'<p class="hint">Nothing estimated yet.</p>';
+}
+function clearRound(){votes={};revealed=false}
+document.addEventListener('click',e=>{
+  const t=e.target, d=t.dataset||{};
+  if(d.confirm){
+    const id=+d.confirm, tk=tickets.find(x=>x.id===id), val=$('finalVal').value;
+    tickets=tickets.filter(x=>x.id!==id);
+    done.unshift({id:tk.id,title:tk.title,link:tk.link,note:tk.note,value:val,votes:{...votes}});
+    selected=null; clearRound(); historyOpen=true; return render();
+  }
+  if(d.del){tickets=tickets.filter(x=>x.id!==+d.del); return render();}
+  if(d.redo){
+    const h=done.find(x=>x.id===+d.redo); done=done.filter(x=>x!==h);
+    tickets.unshift({id:h.id,title:h.title,link:h.link,note:h.note,redo:h.value});
+    selected=h.id; clearRound(); return render();
+  }
+  if(d.card){
+    votes.You=d.card;
+    PEOPLE.slice(1).forEach(p=>{ if(!votes[p]) votes[p]=DECK[2+Math.floor(Math.random()*4)]; });
+    return render();
+  }
+  const tk=t.closest&&t.closest('.ticket');
+  if(tk&&!t.closest('.confirm')&&t.tagName!=='A'){
+    const id=+tk.dataset.id;
+    if(id!==selected){selected=id; clearRound(); render();}
+    return;
+  }
+  if(t.id==='revealBtn'){revealed=true; return render();}
+  if(t.id==='clearBtn'){clearRound(); return render();}
+  if(t.id==='histBtn'||t.id==='histClose'){historyOpen=!historyOpen; return render();}
+  if(t.id==='addBtn'){$('veil').classList.add('open'); $('added').textContent=''; $('fTitle').focus(); return;}
+  if(t.id==='doneBtn'||t.id==='veil'){$('veil').classList.remove('open'); return;}
+  if(t.id==='addOne') return addTicket();
+  if(t.id==='themeBtn'){const r=document.documentElement; r.dataset.theme=r.dataset.theme==='dark'?'':'dark';}
+});
+function addTicket(){
+  const title=$('fTitle').value.trim(); if(!title){$('fTitle').focus(); return;}
+  tickets.push({id:nextId++,title,link:$('fLink').value.trim(),note:$('fNote').value.trim()});
+  $('fTitle').value=$('fLink').value=$('fNote').value='';
+  $('added').textContent='Added. Type the next one.'; $('fTitle').focus(); render();
+}
+$('fTitle').addEventListener('keydown',e=>{if(e.key==='Enter') addTicket();});
+if(matchMedia('(prefers-color-scheme: dark)').matches) document.documentElement.dataset.theme='dark';
+render();
+</script>
+</body>
+</html>

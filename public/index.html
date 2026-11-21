@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Scrum Poker</title>
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem("scrum-poker:theme");
+          var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+          document.documentElement.setAttribute("data-theme", saved || (prefersDark ? "dark" : "light"));
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "light");
+        }
+      })();
+    </script>
+    <link rel="stylesheet" href="/styles.css?v=v20261111-tickets7">
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <span></span>
+          <span></span>
+        </span>
+        <span class="brand-copy">
+          <strong>Scrum Poker</strong>
+          <span>Team estimation</span>
+        </span>
+      </div>
+      <div class="topbar-room" id="topbarRoom" hidden>
+        <div class="topbar-room-copy">
+          <span class="topbar-room-label">Room</span>
+          <strong id="roomTitle">Planning room</strong>
+          <span class="topbar-room-id">ID <span id="roomIdText"></span></span>
+        </div>
+        <span class="topbar-role" id="hostBadge" hidden>Owner</span>
+      </div>
+      <div class="topbar-actions" id="topbarActions" hidden>
+        <button class="icon-button" id="roomEditButton" type="button" aria-label="Edit room settings" hidden>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M14.5 5.5l4 4M4 20l1.2-4.2L16 5l3 3L8.2 18.8 4 20z"></path>
+          </svg>
+          <span>Edit</span>
+        </button>
+        <button class="icon-button" id="copyLinkButton" type="button" aria-label="Copy invite link">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 7h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"></path>
+            <path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span>Copy link</span>
+        </button>
+        <button class="ghost-button" id="historyToggleButton" type="button" aria-expanded="false" hidden>History</button>
+        <button class="ghost-button" id="leaveRoomButton" type="button">Leave</button>
+      </div>
+      <span class="connection-pill" id="connectionStatus" hidden>Offline</span>
+      <button class="version-chip" id="whatsNewButton" type="button" aria-label="What's new">
+        <span id="versionLabel">v1.2</span>
+        <span class="version-dot" id="versionDot" hidden></span>
+      </button>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle day and night mode">
+        <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path>
+        </svg>
+        <svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2"></circle>
+          <path d="M12 2v2.4M12 19.6V22M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M2 12h2.4M19.6 12H22M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"></path>
+        </svg>
+      </button>
+    </header>
+
+    <main>
+      <section class="intro" id="introView">
+        <section class="your-rooms" id="yourRooms" hidden>
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Welcome back</p>
+              <h2>Your rooms</h2>
+            </div>
+          </div>
+          <div class="your-rooms-list" id="yourRoomsList"></div>
+        </section>
+        <p class="your-rooms-empty" id="yourRoomsEmpty" hidden>
+          No active sessions. Open History to revisit a room you've joined before.
+        </p>
+
+        <div class="entry-layout">
+          <div class="intro-copy">
+            <p class="eyebrow" id="introEyebrow">Planning room</p>
+            <h1 id="introTitle">Team Scrum Poker</h1>
+            <p id="introSubtitle">Private rooms, hidden votes, clean reveals.</p>
+
+            <div class="table-preview" aria-hidden="true">
+              <div class="preview-card preview-card-a">3</div>
+              <div class="preview-card preview-card-b">5</div>
+              <div class="preview-card preview-card-c">8</div>
+              <div class="preview-rail">
+                <span></span>
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <form class="surface create-surface" id="createRoomForm">
+              <div class="surface-heading">
+                <span class="surface-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M12 5v14"></path>
+                    <path d="M5 12h14"></path>
+                  </svg>
+                </span>
+                <h2>Start a room</h2>
+              </div>
+            <label>
+              Room name
+              <input id="createRoomName" name="roomName" autocomplete="off" maxlength="80" placeholder="Tarantula#5242">
+            </label>
+            <label>
+              Your name
+              <input id="createName" name="name" autocomplete="name" maxlength="40" required>
+            </label>
+            <label>
+              Room password
+              <input id="createPassword" name="password" type="password" autocomplete="new-password" minlength="4" required>
+            </label>
+            <button class="primary-button" type="submit">Create room</button>
+          </form>
+
+            <form class="surface join-surface" id="joinRoomForm">
+              <div class="surface-heading">
+                <span class="surface-icon alt" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <path d="M9 18l6-6-6-6"></path>
+                    <path d="M4 12h11"></path>
+                    <path d="M16 5h3a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-3"></path>
+                  </svg>
+                </span>
+                <h2 id="joinHeading">Join a room</h2>
+              </div>
+            <label id="joinRoomIdLabel">
+              Room ID
+              <input id="joinRoomId" name="roomId" autocomplete="off" required>
+            </label>
+            <p class="waiting-room-meta" id="waitingRoomMeta" hidden></p>
+            <label>
+              Your name
+              <input id="joinName" name="name" autocomplete="name" maxlength="40" required>
+            </label>
+            <label>
+              Room password
+              <input id="joinPassword" name="password" type="password" autocomplete="current-password" required>
+            </label>
+            <button class="secondary-button" id="joinButton" type="submit">Join room</button>
+          </form>
+
+            <section class="surface history-surface" id="historyRail" hidden>
+              <div class="surface-heading">
+                <span class="surface-icon alt" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9"></circle>
+                    <path d="M12 7v5l3 2"></path>
+                  </svg>
+                </span>
+                <h2>History</h2>
+                <span class="rail-count" id="historyRailCount" hidden></span>
+              </div>
+              <div class="history-rail-list" id="historyRailList"></div>
+            </section>
+          </div>
+        </div>
+
+        <p class="notice" id="introNotice" role="status"></p>
+      </section>
+
+      <section class="room" id="roomView" hidden>
+        <div class="invite-row">
+          <label>
+            Invite link
+            <input id="inviteLinkInput" type="text" readonly aria-label="Invite link">
+          </label>
+        </div>
+
+        <div class="tickets-layout" id="ticketsLayout">
+          <aside class="tickets-panel" id="ticketsPanel" aria-label="Tickets">
+            <div class="section-heading tickets-heading">
+              <div>
+                <p class="eyebrow">Tickets</p>
+                <h2 id="ticketsCount">To estimate</h2>
+              </div>
+              <button class="primary-button tickets-add-button" id="ticketsAddButton" type="button">Tickets <span aria-hidden="true">+</span></button>
+            </div>
+            <div class="tickets-list" id="ticketsList"></div>
+          </aside>
+
+          <div class="table-room" id="tableRoom">
+            <section class="round-table-section">
+              <div class="section-heading table-heading" hidden>
+                <div>
+                  <p class="eyebrow" id="tableModeLabel">Scrum Poker</p>
+                  <h2 id="tableTitle">Pick your estimate</h2>
+                </div>
+              </div>
+
+              <div class="round-table-scene" aria-label="Round table with Scrum Poker players">
+                <div class="agenda-board collapsed" id="agendaBoard">
+                  <div class="agenda-head">
+                    <button class="agenda-toggle" id="agendaToggle" type="button" aria-label="Toggle agenda board" aria-expanded="false">
+                      <span class="agenda-title">Agenda</span>
+                      <svg class="agenda-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+                    </button>
+                    <button class="agenda-clock" id="agendaClock" type="button" aria-label="Jump to now and follow the time" title="Jump to now">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5V12l3 1.8"></path></svg>
+                    </button>
+                  </div>
+                  <div class="agenda-paper">
+                    <div class="agenda-margin" aria-hidden="true"></div>
+                    <div class="agenda-viewport" id="agendaViewport">
+                      <div class="agenda-rail" id="agendaRail"></div>
+                    </div>
+                    <div class="agenda-nowline" aria-hidden="true"></div>
+                  </div>
+                  <div class="agenda-controls" id="agendaControls" hidden>
+                    <button class="agenda-entry-control trash" id="agendaTrash" type="button" aria-label="Delete note">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"></path></svg>
+                    </button>
+                    <button class="agenda-entry-control edit" id="agendaEdit" type="button" aria-label="Edit note">
+                      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 5.5l4 4M4 20l1.2-4.2L16 5l3 3L8.2 18.8 4 20z"></path></svg>
+                    </button>
+                  </div>
+                  <div class="agenda-editor" id="agendaEditor" hidden></div>
+                </div>
+                <div class="round-table">
+                  <div class="round-table-ring" aria-hidden="true"></div>
+                  <div class="table-center-panel">
+                    <button class="table-stack-button" id="tableStackButton" type="button">
+                      <span class="table-card-stack" aria-hidden="true">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </span>
+                      <strong id="tableStackTitle">Reveal votes</strong>
+                      <span id="tableStackMeta">0/0 voted</span>
+                    </button>
+                    <div class="community-cards" id="communityCards"></div>
+                    <div class="table-poker-controls" id="tablePokerControls" hidden>
+                      <div class="poker-actions" id="pokerActions">
+                        <button class="ghost-button" id="pokerFoldButton" type="button">Fold</button>
+                        <button class="ghost-button" id="pokerCheckButton" type="button">Check</button>
+                        <button class="ghost-button" id="pokerCallButton" type="button">Call</button>
+                        <button class="primary-button" id="pokerBetButton" type="button">Bet 5</button>
+                        <button class="secondary-button" id="pokerRaiseButton" type="button">Raise 5</button>
+                        <button class="primary-button" id="pokerStartButton" type="button" hidden>Start hand</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="table-seats" id="tableSeats"></div>
+              </div>
+            </section>
+
+            <section class="card-hand" id="scrumHand">
+              <div class="deck" id="deck"></div>
+              <div class="team-board" id="teamBoard" role="dialog" aria-label="Your team" hidden>
+                <p class="team-board-title">Your team</p>
+                <p class="team-board-hint">Colors your card and groups your seat at the table.</p>
+                <div class="team-board-list" id="teamBoardList"></div>
+              </div>
+            </section>
+
+          </div>
+
+          <div class="history-panel" id="historyPanel" hidden>
+            <div class="section-heading history-heading">
+              <div>
+                <p class="eyebrow">History</p>
+                <h2>Estimated tickets</h2>
+              </div>
+              <div class="export-wrap">
+                <button class="ghost-button" id="exportButton" type="button" aria-expanded="false">Export</button>
+                <div class="export-picker" id="exportPicker" hidden>
+                  <p class="export-picker-title">Export notes + votes</p>
+                  <label class="export-field">
+                    From
+                    <input id="exportFrom" type="datetime-local">
+                  </label>
+                  <label class="export-field">
+                    To
+                    <input id="exportTo" type="datetime-local">
+                  </label>
+                  <div class="export-picker-actions">
+                    <button class="ghost-button" id="exportCancel" type="button">Cancel</button>
+                    <button class="primary-button" id="exportDownload" type="button">Download CSV</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="history-list ticket-history-list" id="ticketHistoryList"></div>
+            <p class="eyebrow history-subhead" id="historyRoundsHeading">Other rounds</p>
+            <div class="history-list" id="historyList"></div>
+          </div>
+        </div>
+
+        <p class="notice" id="roomNotice" role="status"></p>
+      </section>
+
+      <div class="free-number-popover" id="freeNumberPopover" hidden>
+        <form class="free-number-form" id="freeNumberForm">
+          <label class="free-number-label" for="freeNumberInput">Enter a number</label>
+          <div class="free-number-row">
+            <input
+              class="free-number-input"
+              id="freeNumberInput"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              autocomplete="off"
+              maxlength="6"
+              aria-label="Custom estimate number"
+            />
+            <button class="primary-button" id="freeNumberSet" type="submit">Set</button>
+            <button class="ghost-button" id="freeNumberCancel" type="button">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <div class="whatsnew-overlay" id="ticketAddModal" hidden>
+      <div class="whatsnew ticket-add" role="dialog" aria-modal="true" aria-label="Add tickets">
+        <div class="whatsnew-head">
+          <h2>Add tickets</h2>
+          <button class="whatsnew-close" id="ticketAddClose" type="button" aria-label="Close">✕</button>
+        </div>
+        <form class="ticket-add-body" id="ticketAddForm" autocomplete="off">
+          <label>
+            Title
+            <input id="ticketTitleInput" type="text" maxlength="140" required>
+          </label>
+          <label>
+            Link <span class="ticket-optional">(optional)</span>
+            <input id="ticketLinkInput" type="text" maxlength="400" placeholder="https://...">
+          </label>
+          <label>
+            Description <span class="ticket-optional">(optional)</span>
+            <textarea id="ticketDescInput" rows="3" maxlength="600"></textarea>
+          </label>
+          <div class="ticket-add-actions">
+            <span class="ticket-added" id="ticketAddedNote" role="status"></span>
+            <button class="ghost-button" id="ticketAddDone" type="button">Done</button>
+            <button class="primary-button" id="ticketAddSubmit" type="submit">Add ticket</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="whatsnew-overlay" id="roomSettingsModal" hidden>
+      <div class="whatsnew room-settings" role="dialog" aria-modal="true" aria-label="Room settings">
+        <div class="whatsnew-head">
+          <h2>Room settings</h2>
+          <button class="whatsnew-close" id="roomSettingsClose" type="button" aria-label="Close">✕</button>
+        </div>
+        <div class="room-settings-body">
+          <label>
+            Room name
+            <input id="roomSettingsName" type="text" maxlength="80" autocomplete="off">
+          </label>
+          <button class="primary-button" id="roomSettingsSaveName" type="button">Save name</button>
+          <hr class="room-settings-divider">
+          <label>
+            New password
+            <input id="roomSettingsPassword" type="password" minlength="4" autocomplete="new-password" placeholder="Leave blank to keep current">
+          </label>
+          <button class="secondary-button" id="roomSettingsSavePassword" type="button">Change password</button>
+          <hr class="room-settings-divider">
+          <div class="teams-editor" id="teamsEditor">
+            <p class="teams-editor-title">Teams</p>
+            <p class="teams-editor-hint">Players pick a team — it colors their card and groups the table.</p>
+            <div class="teams-list" id="teamsList"></div>
+            <form class="team-add-row" id="teamAddForm">
+              <input id="teamNameInput" type="text" maxlength="24" autocomplete="off" placeholder="Team name" aria-label="New team name">
+              <input id="teamHueInput" class="hue-slider" type="range" min="0" max="359" value="210" aria-label="Team color">
+              <span class="team-swatch" id="teamSwatch" aria-hidden="true"></span>
+              <button class="secondary-button" id="teamAddButton" type="submit">Add</button>
+            </form>
+          </div>
+          <p class="notice" id="roomSettingsNotice" role="status"></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="whatsnew-overlay" id="whatsNewModal" hidden>
+      <div class="whatsnew" role="dialog" aria-modal="true" aria-label="What's new">
+        <div class="whatsnew-head">
+          <h2>What's new</h2>
+          <button class="whatsnew-close" id="whatsNewClose" type="button" aria-label="Close">✕</button>
+        </div>
+        <div class="whatsnew-list" id="whatsNewList"></div>
+      </div>
+    </div>
+
+    <script src="/releases.js?v=v20260710-release" defer></script>
+    <script src="/export.js?v=v20261111-tickets7" defer></script>
+    <script src="/app.js?v=v20261111-tickets7" defer></script>
+  </body>
+</html>
